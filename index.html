@@ -483,7 +483,7 @@ async function showPayment(){
   w.innerHTML=`<div class="b in">
     <div class="pay-card">
       <div class="pay-title">💳 PayShap Details</div>
-      <div class="pay-row">🏦 <span><b>PayShap ID:</b> 0697202093@capitec</span></div>
+      <div class="pay-row">🏦 <span><b>PayShap ID:</b> 0822271198@capitec</span></div>
       <div class="pay-row">💰 <span><b>Amount:</b> ${p.price}</span></div>
       <div class="pay-row">📝 <span><b>Reference:</b> ${refNum}</span></div>
     </div>
@@ -491,7 +491,7 @@ async function showPayment(){
   </div>`;
   msgs.appendChild(w);scrollB();
 
-  await addIn(`*How to pay:*\n1️⃣ Open your banking app → PayShap\n2️⃣ Enter: *0697202093@capitec*\n3️⃣ Amount: *${p.price}*\n4️⃣ Reference: *${refNum}*\n5️⃣ Screenshot proof & send below 👇`);
+  await addIn(`*How to pay:*\n1️⃣ Open your banking app → PayShap\n2️⃣ Enter: *0822271198@capitec*\n3️⃣ Amount: *${p.price}*\n4️⃣ Reference: *${refNum}*\n5️⃣ Screenshot proof & send below 👇`);
 
   addQR([
     {label:'✅ I have paid – confirm booking!',action:confirmBooking},
@@ -501,7 +501,7 @@ async function showPayment(){
 
 async function payHelp(){
   removeQR();
-  await addIn(`No problem! Here's more help:\n\n📱 Open your *banking app*\n🔍 Look for *"Pay"* or *"PayShap"*\n📲 Enter: *0697202093@capitec*\n\nAlternatively call us on *069 720 2093* and we'll walk you through it! 😊`);
+  await addIn(`No problem! Here's more help:\n\n📱 Open your *banking app*\n🔍 Look for *"Pay"* or *"PayShap"*\n📲 Enter: *0822271198@capitec*\n\nAlternatively call us on *069 720 2093* and we'll walk you through it! 😊`);
   addQR([
     {label:'✅ I have paid now!',action:confirmBooking},
     {label:'📞 I\'ll call to pay',action:callToConfirm},
