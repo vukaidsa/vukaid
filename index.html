@@ -327,7 +327,15 @@ const packages=[
 // ── SLOTS ──────────────────────────────────────────────────────────────────
 const today=new Date();
 function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;}
+const holidays = ["2026-12-25"];
 
+function isHoliday(date){
+  const local = date.getFullYear() + "-" +
+    String(date.getMonth()+1).padStart(2,'0') + "-" +
+    String(date.getDate()).padStart(2,'0');
+
+  return holidays.includes(local);
+ }
 function getSlots(){
   const slots=[];
 
