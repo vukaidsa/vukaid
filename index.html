@@ -330,33 +330,36 @@ function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const
 
 function getSlots(){
   const slots=[];
-  for(let d=1;d<=6&&slots.length<16;d++){
-    const dt=new Date(today);dt.setDate(today.getDate()+d);
-    const dow=dt.getDay();
-    if(dow===0)continue; // skip Sunday
-    const isSat=dow===6;
-    // Operating hours: Mon-Fri 08:00-16:30 (last slot 15:45), Sat 08:00-14:00 (last slot 13:15)
-    const endH=isSat?13:15, endM=isSat?15:45;
-    const times=[];
-    let h=8,m=0;
-    while(h<endH||(h===endH&&m<=endM)){
-      times.push(`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`);
-      m+=15;if(m>=60){m=0;h++;}
-    }
-    // Pick 4 spread across the day
-    if(times.length>=4){
-      const picks=[
-        times[0],
-        times[Math.floor(times.length/3)],
-        times[Math.floor(times.length*2/3)],
-        times[times.length-1]
-      ];
-      picks.forEach(t=>{
-        if(slots.length<16)
-          slots.push({date:fmtDate(dt),time:t,taken:Math.random()<0.3});
+
+  for(let d=1; d<=6; d++){
+    const dt = new Date(today);
+    dt.setDate(today.getDate() + d);
+
+    const dow = dt.getDay();
+    if(dow === 0) continue;
+
+    const isSat = dow === 6;
+
+    let h = 8, m = 0;
+    const endH = isSat ? 14 : 16;
+    const endM = isSat ? 0 : 30;
+
+    let daySlots = [];
+
+    while(h < endH || (h === endH && m <= endM)){
+      daySlots.push({
+        date: fmtDate(dt),
+        time: `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`,
+        taken: false
       });
+
+      m += 15;
+      if(m >= 60){ m = 0; h++; }
     }
+
+    slots.push(...daySlots.slice(0,30)); // 30 per day
   }
+
   return slots;
 }
 
@@ -418,21 +421,69 @@ function selectPkg(id){
 async function askSlot(){
   state='slot';
   await addIn(`Great choice! 🙌\n\nNow pick your *preferred date & time slot*:`);
-  const slots=getSlots();
-  const w=document.createElement('div');w.className='bw in';
-  let grid=`<div class="b in"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">AVAILABLE SLOTS (tap to select)</div><div class="slot-grid">`;
-  slots.forEach((s,i)=>{
-    grid+=`<div class="slot${s.taken?' taken':''}" ${!s.taken?`onclick="selectSlot('${s.date}','${s.time}',this)"`:''}>${s.time}<span class="slot-date">${s.date}</span></div>`;
+
+  const slots = getSlots();
+
+  const grouped = {};
+  slots.forEach(s=>{
+    if(!grouped[s.date]) grouped[s.date]=[];
+    grouped[s.date].push(s);
   });
-  grid+=`</div><span class="bt">🔒 ${gt()}</span></div>`;
-  w.innerHTML=grid;msgs.appendChild(w);scrollB();
+
+  const w=document.createElement('div');
+  w.className='bw in';
+
+  let html = `<div class="b in">
+  <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">
+  AVAILABLE SLOTS (tap to select)
+  </div>`;
+
+  Object.keys(grouped).forEach(date=>{
+    html += `<div style="margin:10px 0 4px;font-weight:700;color:var(--g);font-size:13px;">
+    📅 ${date}</div><div class="slot-grid">`;
+
+    grouped[date].forEach(s=>{
+      html += `<div class="slot"
+        onclick="selectSlot('${s.date}','${s.time}',this)">
+        ${s.time}
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  html += `<span class="bt">🔒 ${gt()}</span></div>`;
+
+  w.innerHTML = html;
+  msgs.appendChild(w);
+  scrollB();
 }
 
-function selectSlot(date,time,el){
-  if(state!=='slot')return;
+ async function isSlotTaken(date, time){
+  try{
+    const res = await fetch(`https://sheetdb.io/api/v1/xnroebn1la6lk/search?Date=${encodeURIComponent(date)}&Time=${time}`);
+    const data = await res.json();
+    return data.length > 0;
+  }catch(e){
+    return false;
+  }
+}
+async function selectSlot(date,time,el){
+  if(state!=='slot') return;
+
+  const taken = await isSlotTaken(date,time);
+
+  if(taken){
+    el.classList.add('taken');
+    el.innerHTML = `${time}<br><small>FULL</small>`;
+    return addIn(`❌ Sorry, that slot is already booked. Please choose another.`);
+  }
+
   booking.slot={date,time};
-  document.querySelectorAll('.slot:not(.taken)').forEach(s=>s.classList.remove('sel'));
+
+  document.querySelectorAll('.slot').forEach(s=>s.classList.remove('sel'));
   el.classList.add('sel');
+
   setTimeout(()=>{
     addOut(`📅 ${date} at ${time}`);
     setTimeout(()=>showSummary(),600);
@@ -515,24 +566,36 @@ async function callToConfirm(){
 }
 
 async function confirmBooking(){
-  state='confirmed';
-  removeQR();
+  const refNum = "VUKA" + Math.floor(Math.random()*1000000);
 
-  const isRepPkg=(booking.pkg&&booking.pkg.id==='replace')||(bkData&&bkData.pkg==='replace')||false;
+  // ✅ Save to database
+  fetch("https://sheetdb.io/api/v1/xnroebn1la6lk", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      data: [{
+        Date: booking.slot.date,
+        Time: booking.slot.time,
+        Name: booking.name,
+        Phone: booking.phone,
+        Package: booking.pkg.name,
+        Ref: refNum
+      }]
+    })
+  });
 
-  // Auto-send booking details to VUKA ID WhatsApp
-  const bMsg=`🌅 *VUKA ID – NEW BOOKING*
-━━━━━━━━━━━━━━━━━━
-📋 *Ref:* ${refNum}
-👤 *Name:* ${booking.name}
-🏫 *School/Area:* ${booking.school||'N/A'}
-📱 *WhatsApp:* ${booking.phone||'N/A'}
-📦 *Package:* ${booking.pkg?booking.pkg.icon+' '+booking.pkg.name:'N/A'}
-💰 *VUKA ID Fee:* ${booking.pkg?booking.pkg.price:'N/A'}${isRepPkg?'\n⚠️ Client also pays R140 to Home Affairs':''}
-📅 *Date & Time:* ${booking.slot?booking.slot.date+' at '+booking.slot.time:'N/A'}${booking.pkg&&booking.pkg.f2f&&!isRepPkg?'\n📶 Data: Provided by us':''}
-━━━━━━━━━━━━━━━━━━
-_Sent via VUKA ID · vukaid.co.za_`;
-  setTimeout(()=>window.open('https://wa.me/27697202093?text='+encodeURIComponent(bMsg),'_blank'),800);
+  // ✅ WhatsApp message (no payment)
+  const msg = `*NEW BOOKING*%0A
+Name: ${booking.name}%0A
+Phone: ${booking.phone}%0A
+Package: ${booking.pkg.name}%0A
+Date: ${booking.slot.date}%0A
+Time: ${booking.slot.time}%0A
+Ref: ${refNum}`;
+
+  window.open(`https://wa.me/27697202093?text=${msg}`, '_blank');
 
   const w=document.createElement('div');w.className='bw in';
   w.innerHTML=`<div class="b in">
@@ -546,7 +609,12 @@ _Sent via VUKA ID · vukaid.co.za_`;
   </div>`;
   msgs.appendChild(w);scrollB();
 
-  await addIn(`✅ *Your booking is CONFIRMED!*\n\n📌 Save your reference: *${refNum}*\n📲 We'll WhatsApp you a reminder the day before\n${booking.pkg.f2f?'📶 Remember: *Data is on us* for your visit!\n':''}🔏 Please have your *original or certified documents* ready\n\nSee you on *${booking.slot.date} at ${booking.slot.time}*! 🌅`);
+  await addIn(`✅ Booking Confirmed!
+
+📅 ${booking.slot.date} at ${booking.slot.time}
+🆔 Ref: ${refNum}
+
+📲 We’ve received your booking and will contact you shortly on WhatsApp.`);
 
   addQR([
     {label:'📋 What documents do I need?',action:docReminder},
