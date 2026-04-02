@@ -325,10 +325,7 @@ const packages=[
 ];
 
 // ── SLOTS ──────────────────────────────────────────────────────────────────
-const today=new Date();
-function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;}
-
- const holidays = [
+const holidays = [
 "2026-01-01",
 "2026-03-21",
 "2026-04-03",
@@ -346,10 +343,15 @@ function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const
 function isHoliday(date){
 return holidays.includes(date.toISOString().split('T')[0]);
 }
+ const today=new Date();
+function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;}
 
 function getSlots(){
-  const slots=[];
-
+ const slots=[];
+ 
+if(dow === 0) continue;       // Sunday
+if(isHoliday(dt)) continue;   // Holiday
+ 
   for(let d=1; d<=6; d++){
     const dt = new Date(today);
     dt.setDate(today.getDate() + d);
@@ -359,9 +361,7 @@ function getSlots(){
 
     const isSat = dow === 6;
 
-   if(dow === 0) continue;       // Sunday
-if(isHoliday(dt)) continue;   // Holiday
-
+   
     let h = 8, m = 0;
     const endH = isSat ? 14 : 16;
     const endM = isSat ? 0 : 30;
