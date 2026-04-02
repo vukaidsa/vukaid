@@ -5,24 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>VUKA ID – Booking System</title>
 <style>
- const holidays = [
-  "2026-01-01",
-  "2026-03-21",
-  "2026-04-03",
-  "2026-04-06",
-  "2026-04-27",
-  "2026-05-01",
-  "2026-06-16",
-  "2026-08-09",
-  "2026-09-24",
-  "2026-12-16",
-  "2026-12-25",
-  "2026-12-26"
-];
-
-function isHoliday(date){
-  return holidays.includes(date.toISOString().split('T')[0]);
-}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   :root{
     --g:#1A5C38;--gd:#0f3d22;--gl:#25D366;
@@ -345,7 +327,32 @@ const packages=[
 // ── SLOTS ──────────────────────────────────────────────────────────────────
 const today=new Date();
 function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;}
+let holidayDates = [];
 
+async function loadHolidays(){
+  try{
+    const year = new Date().getFullYear();
+
+    const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/ZA`);
+    const data = await res.json();
+
+    holidayDates = data.map(h => h.date); // "YYYY-MM-DD"
+
+    console.log("Loaded holidays:", holidayDates);
+
+  }catch(err){
+    console.error("Holiday load failed:", err);
+  }
+
+function isHoliday(date){
+  const local = date.getFullYear() + "-" +
+    String(date.getMonth()+1).padStart(2,'0') + "-" +
+    String(date.getDate()).padStart(2,'0');
+
+  return holidayDates.includes(local);
+}
+ loadHolidays();
+ 
 function getSlots(){
   const slots=[];
 
@@ -357,6 +364,9 @@ function getSlots(){
     if(dow === 0) continue;
 
     const isSat = dow === 6;
+   
+   if(dow === 0) continue;       // Sunday
+if(isHoliday(dt)) continue;   // Holiday
 
     let h = 8, m = 0;
     const endH = isSat ? 14 : 16;
@@ -749,7 +759,12 @@ document.getElementById('inp').addEventListener('input',function(){
   this.style.height='auto';
   this.style.height=Math.min(this.scrollHeight,100)+'px';
 });
+ 
+async function initApp(){
+  await loadHolidays(); // load holidays first
+}
 
+initApp();
 // ── START ──────────────────────────────────────────────────────────────────
 setTimeout(()=>start(),600);
 </script>
