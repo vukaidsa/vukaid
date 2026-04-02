@@ -759,12 +759,7 @@ document.getElementById('inp').addEventListener('input',function(){
   this.style.height='auto';
   this.style.height=Math.min(this.scrollHeight,100)+'px';
 });
- 
-async function initApp(){
-  await loadHolidays(); // load holidays first
-}
 
-initApp();
 // ── START ──────────────────────────────────────────────────────────────────
 setTimeout(()=>start(),600);
 </script>
