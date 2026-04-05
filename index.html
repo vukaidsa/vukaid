@@ -349,12 +349,13 @@ function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const
 function getSlots(){
  const slots=[];
  
-  for(let d=0; d<=6; d++){
-    const dt = new Date(today);
+  for(let d=0; d<=6; d++){ // ✅
+   MUST have loop  
+   const dt = new Date(today);
     dt.setDate(today.getDate() + d);
 
     const dow = dt.getDay();
-    if(dow === 0) continue;
+    if(dow === 0) continue; // akip Sunday
 
     const isSat = dow === 6;
 if(dow === 0) continue;       // Sunday
