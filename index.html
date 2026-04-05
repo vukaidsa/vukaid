@@ -349,9 +349,6 @@ function fmtDate(d){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const
 function getSlots(){
  const slots=[];
  
-if(dow === 0) continue;       // Sunday
-if(isHoliday(dt)) continue;   // Holiday
- 
   for(let d=1; d<=6; d++){
     const dt = new Date(today);
     dt.setDate(today.getDate() + d);
@@ -360,8 +357,9 @@ if(isHoliday(dt)) continue;   // Holiday
     if(dow === 0) continue;
 
     const isSat = dow === 6;
-
-   
+if(dow === 0) continue;       // Sunday
+if(isHoliday(dt)) continue;   // Holiday
+ 
     let h = 8, m = 0;
     const endH = isSat ? 14 : 16;
     const endM = isSat ? 0 : 30;
